@@ -8,6 +8,7 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("hello", help="check that everything is wired up")
     sub.add_parser("prepare-data", help="Milestone 1: load and preprocess LEDGAR dataset")
     sub.add_parser("train", help="Milestone 2: fine-tune GPT-2 model on legal clauses")
+    sub.add_parser("evaluate", help="Milestone 3: evaluate accuracy, precision, recall, and F1")
     args = parser.parse_args(argv)
     if args.command == "hello":
         print("Quantized Legal Tagger Monitor is ready. Open README.md for your milestones.")
@@ -19,6 +20,10 @@ def main(argv: list[str] | None = None) -> None:
         from app.core import milestone_2
         res = milestone_2()
         print(f"Fine-tuned GPT-2 ({res['num_parameters']:,} params). Initial loss: {res['initial_loss']:.4f}, Final loss: {res['final_loss']:.4f}.")
+    elif args.command == "evaluate":
+        from app.core import milestone_3
+        res = milestone_3()
+        print(f"Evaluation: Accuracy={res['accuracy']:.2%}, Precision={res['precision']:.2%}, Recall={res['recall']:.2%}, F1={res['f1_score']:.2%}")
 
 
 if __name__ == "__main__":

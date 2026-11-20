@@ -18,7 +18,7 @@ Tick these off as you go, and commit after each one.
       Hint: Focus on data loading, preprocessing, and tokenization for the LEDGAR dataset.
 - [x] **2. Fine-tune a GPT-2 model to tag legal clauses using the classification as generation approach.**  
       Hint: Apply the 'Fine-Tune GPT-2 to Tag Legal Contract Clauses' drill's technique for training your model.
-- [ ] **3. Evaluate the tagging accuracy of the fine-tuned model.**  
+- [x] **3. Evaluate the tagging accuracy of the fine-tuned model.**  
       Hint: Calculate standard classification metrics like accuracy, precision, recall, and F1-score for evaluation.
 - [ ] **4. Apply dynamic and static post-training quantization to the trained model.**  
       Hint: Use the 'Shrink a Neural Network with Quantisation' drill's methods for applying dynamic and static quantization.

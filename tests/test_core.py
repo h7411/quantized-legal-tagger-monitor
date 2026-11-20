@@ -77,9 +77,30 @@ def test_milestone_2():
 
 
 # Milestone 3: Evaluate the tagging accuracy of the fine-tuned model.
-@pytest.mark.skip(reason="remove this line when you start milestone 3")
 def test_milestone_3():
-    raise NotImplementedError("write the test for milestone 3")
+    from app.core import (
+        milestone_3,
+        compute_classification_metrics,
+        LEDGAR_CATEGORIES,
+    )
+
+    res = milestone_3()
+    assert res["status"] == "completed"
+    assert res["total_evaluated"] >= 8
+    assert res["accuracy"] >= 0.75
+    assert res["precision"] >= 0.75
+    assert res["recall"] >= 0.75
+    assert res["f1_score"] >= 0.75
+    assert len(res["per_class_metrics"]) == len(LEDGAR_CATEGORIES)
+    assert len(res["sample_predictions"]) == res["total_evaluated"]
+
+    # Test unit metrics function
+    y_true = ["Governing Law", "Termination", "Termination"]
+    y_pred = ["Governing Law", "Termination", "Governing Law"]
+    m = compute_classification_metrics(y_true, y_pred)
+    assert abs(m["accuracy"] - 2 / 3) < 1e-3
+    assert m["total"] == 3
+    assert m["correct"] == 2
 
 
 # Milestone 4: Apply dynamic and static post-training quantization to the trained model.

@@ -527,9 +527,131 @@ def milestone_2(epochs: int = 5) -> Dict[str, Any]:
     }
 
 
+# -----------------------------------------------------------------------------
+# Milestone 3: Evaluation Metrics (Accuracy, Precision, Recall, F1)
+# -----------------------------------------------------------------------------
+def compute_classification_metrics(
+    actual: List[str],
+    predicted: List[str],
+    categories: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Compute accuracy, macro/weighted precision, recall, F1, and per-class metrics."""
+    assert len(actual) == len(predicted), "Length of actual and predicted must match"
+    total = len(actual)
+    if total == 0:
+        return {"accuracy": 0.0, "precision": 0.0, "recall": 0.0, "f1_score": 0.0}
+
+    categories = categories or sorted(list(set(actual + predicted)))
+
+    correct = sum(1 for a, p in zip(actual, predicted) if a == p)
+    accuracy = correct / total
+
+    per_class: Dict[str, Dict[str, float]] = {}
+    macro_precisions = []
+    macro_recalls = []
+    macro_f1s = []
+    weighted_f1_sum = 0.0
+
+    for cat in categories:
+        tp = sum(1 for a, p in zip(actual, predicted) if a == cat and p == cat)
+        fp = sum(1 for a, p in zip(actual, predicted) if a != cat and p == cat)
+        fn = sum(1 for a, p in zip(actual, predicted) if a == cat and p != cat)
+        support = sum(1 for a in actual if a == cat)
+
+        prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = (2 * prec * rec) / (prec + rec) if (prec + rec) > 0 else 0.0
+
+        per_class[cat] = {
+            "precision": round(prec, 4),
+            "recall": round(rec, 4),
+            "f1": round(f1, 4),
+            "support": support,
+        }
+
+        macro_precisions.append(prec)
+        macro_recalls.append(rec)
+        macro_f1s.append(f1)
+        weighted_f1_sum += f1 * support
+
+    macro_precision = sum(macro_precisions) / len(macro_precisions) if macro_precisions else 0.0
+    macro_recall = sum(macro_recalls) / len(macro_recalls) if macro_recalls else 0.0
+    macro_f1 = sum(macro_f1s) / len(macro_f1s) if macro_f1s else 0.0
+    weighted_f1 = weighted_f1_sum / total if total > 0 else 0.0
+
+    return {
+        "accuracy": round(accuracy, 4),
+        "precision": round(macro_precision, 4),
+        "recall": round(macro_recall, 4),
+        "f1_score": round(macro_f1, 4),
+        "weighted_f1": round(weighted_f1, 4),
+        "per_class": per_class,
+        "total": total,
+        "correct": correct,
+    }
+
+
+def evaluate_tagger(
+    model: nn.Module,
+    tokenizer: LegalClauseTokenizer,
+    test_data: List[Dict[str, Any]],
+    categories: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Evaluate fine-tuned model predictions across test clauses."""
+    categories = categories or LEDGAR_CATEGORIES
+    actual = []
+    predicted = []
+    detailed_records = []
+
+    for item in test_data:
+        clause = item["text"]
+        true_label = item["label"]
+        pred_label = predict_clause_tag(model, tokenizer, clause, categories=categories)
+
+        actual.append(true_label)
+        predicted.append(pred_label)
+        detailed_records.append({
+            "clause": clause[:60] + "...",
+            "actual": true_label,
+            "predicted": pred_label,
+            "correct": true_label == pred_label,
+        })
+
+    metrics = compute_classification_metrics(actual, predicted, categories)
+    metrics["records"] = detailed_records
+    return metrics
+
+
 # --- Milestone 3: Evaluate the tagging accuracy of the fine-tuned model.
-def milestone_3():  # TODO(milestone 3)
-    raise NotImplementedError("TODO(milestone 3)")
+def milestone_3(
+    model: Optional[nn.Module] = None,
+    tokenizer: Optional[LegalClauseTokenizer] = None,
+    test_data: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    """Calculate standard classification metrics: accuracy, precision, recall, and F1-score."""
+    if model is None or tokenizer is None:
+        m2_res = milestone_2()
+        model = m2_res["model"]
+        tokenizer = m2_res["tokenizer"]
+
+    if test_data is None:
+        prep = prepare_ledgar_subset()
+        test_data = prep["test_data"]
+
+    eval_results = evaluate_tagger(model, tokenizer, test_data)
+
+    return {
+        "status": "completed",
+        "accuracy": eval_results["accuracy"],
+        "precision": eval_results["precision"],
+        "recall": eval_results["recall"],
+        "f1_score": eval_results["f1_score"],
+        "weighted_f1": eval_results["weighted_f1"],
+        "total_evaluated": eval_results["total"],
+        "correct": eval_results["correct"],
+        "per_class_metrics": eval_results["per_class"],
+        "sample_predictions": eval_results["records"],
+    }
 
 
 # --- Milestone 4: Apply dynamic and static post-training quantization to the trained model.
