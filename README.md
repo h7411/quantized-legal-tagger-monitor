@@ -50,7 +50,7 @@ DEPLOYMENT RECOMMENDATION FOR LEGAL AID WORKERS:
   -> Enables fast, private, offline contract clause analysis on local devices.
 ==============================================================================
 ```
-
+astrothunder
 ## Quickstart & CLI Usage
 
 ### 1. Setup
