@@ -1,3 +1,4 @@
+[![Built with askThili](https://ask.thili.ai/api/v1/public/projects/6ar4rnvk6j/badge.svg)](https://ask.thili.ai/b/6ar4rnvk6j)
 # Quantized Legal Tagger Monitor
 
 [![Built with askThili](https://ask.thili.ai/api/v1/public/projects/6ar4rnvk6j/badge.svg)](https://ask.thili.ai/b/6ar4rnvk6j)
