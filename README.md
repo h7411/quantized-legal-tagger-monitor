@@ -24,7 +24,7 @@ Tick these off as you go, and commit after each one.
       Hint: Use the 'Shrink a Neural Network with Quantisation' drill's methods for applying dynamic and static quantization.
 - [x] **5. Compare the original and quantized model sizes and measure simulated inference times.**  
       Hint: Implement functions to calculate model memory footprint and simulate inference speed for both original and quantized models.
-- [ ] **6. Present a dashboard-like output of model efficiency metrics.**  
+- [x] **6. Present a dashboard-like output of model efficiency metrics.**  
       Hint: Organize and visualize the collected metrics (accuracy, size, speed) in a clear, comparative dashboard format.
 
 ## Run it

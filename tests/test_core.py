@@ -170,7 +170,32 @@ def test_milestone_5():
 
 
 # Milestone 6: Present a dashboard-like output of model efficiency metrics.
-@pytest.mark.skip(reason="remove this line when you start milestone 6")
 def test_milestone_6():
-    raise NotImplementedError("write the test for milestone 6")
+    from app.core import (
+        milestone_6,
+        format_efficiency_dashboard,
+    )
+
+    res = milestone_6()
+    assert res["status"] == "completed"
+    assert "dashboard" in res
+    assert "QUANTIZED LEGAL TAGGER MONITOR" in res["dashboard"]
+    assert "Original (FP32)" in res["dashboard"]
+    assert "Dynamic INT8" in res["dashboard"]
+    assert "Static INT8" in res["dashboard"]
+    assert "RECOMMENDATION" in res["dashboard"]
+    assert len(res["summary_table"]) == 3
+    assert "recommendation" in res
+
+    # Test format_efficiency_dashboard unit rendering
+    mock_bench = {
+        "original": {"size_kb": 700.0, "mean_latency_ms": 2.5, "throughput_clauses_per_sec": 400.0},
+        "dynamic": {"size_kb": 350.0, "mean_latency_ms": 3.0, "compression_ratio": 2.0, "size_reduction_pct": 50.0, "throughput_clauses_per_sec": 330.0},
+        "static": {"size_kb": 340.0, "mean_latency_ms": 2.8, "compression_ratio": 2.05, "size_reduction_pct": 51.4, "throughput_clauses_per_sec": 350.0},
+    }
+    mock_eval = {"accuracy": 0.95, "f1_score": 0.95}
+    dash = format_efficiency_dashboard(mock_bench, mock_eval)
+    assert "Original (FP32)" in dash
+    assert "700.0" in dash
+    assert "95.0%" in dash
 
