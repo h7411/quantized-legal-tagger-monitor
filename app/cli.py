@@ -10,6 +10,7 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("train", help="Milestone 2: fine-tune GPT-2 model on legal clauses")
     sub.add_parser("evaluate", help="Milestone 3: evaluate accuracy, precision, recall, and F1")
     sub.add_parser("quantize", help="Milestone 4: apply dynamic and static quantization")
+    sub.add_parser("benchmark", help="Milestone 5: benchmark model size and inference speed")
     args = parser.parse_args(argv)
     if args.command == "hello":
         print("Quantized Legal Tagger Monitor is ready. Open README.md for your milestones.")
@@ -31,6 +32,13 @@ def main(argv: list[str] | None = None) -> None:
         print("Quantization applied successfully:")
         print(f"  - Dynamic Quantization: {res['dynamic_quantized']}")
         print(f"  - Static Quantization:  {res['static_quantized']}")
+    elif args.command == "benchmark":
+        from app.core import milestone_5
+        res = milestone_5()
+        b = res["benchmarks"]
+        print(f"Original: {b['original']['size_kb']:.1f} KB, Latency: {b['original']['mean_latency_ms']:.2f} ms")
+        print(f"Dynamic:  {b['dynamic']['size_kb']:.1f} KB ({b['dynamic']['compression_ratio']:.2f}x smaller), Latency: {b['dynamic']['mean_latency_ms']:.2f} ms")
+        print(f"Static:   {b['static']['size_kb']:.1f} KB ({b['static']['compression_ratio']:.2f}x smaller), Latency: {b['static']['mean_latency_ms']:.2f} ms")
 
 
 if __name__ == "__main__":

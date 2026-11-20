@@ -133,9 +133,40 @@ def test_milestone_4():
 
 
 # Milestone 5: Compare the original and quantized model sizes and measure simulated inference times.
-@pytest.mark.skip(reason="remove this line when you start milestone 5")
 def test_milestone_5():
-    raise NotImplementedError("write the test for milestone 5")
+    from app.core import (
+        milestone_5,
+        calculate_model_memory_footprint,
+        simulate_inference_speed,
+        LegalClauseTokenizer,
+        LegalGPT2Model,
+    )
+
+    res = milestone_5()
+    assert res["status"] == "completed"
+    assert "benchmarks" in res
+    bench = res["benchmarks"]
+    assert "original" in bench
+    assert "dynamic" in bench
+    assert "static" in bench
+
+    # Check size reduction
+    assert bench["dynamic"]["size_bytes"] < bench["original"]["size_bytes"]
+    assert bench["static"]["size_bytes"] < bench["original"]["size_bytes"]
+    assert res["dynamic_compression_ratio"] > 1.2
+    assert res["static_compression_ratio"] > 1.2
+
+    # Test unit size calculation
+    tok = LegalClauseTokenizer()
+    m = LegalGPT2Model(vocab_size=tok.vocab_size)
+    fp = calculate_model_memory_footprint(m)
+    assert fp["size_bytes"] > 0
+    assert fp["param_count"] > 10000
+
+    # Test unit speed simulation
+    speed = simulate_inference_speed(m, tok, ["This Agreement shall be governed by Delaware law."], num_runs=2, warmup=1)
+    assert speed["mean_latency_ms"] > 0
+    assert speed["throughput_clauses_per_sec"] > 0
 
 
 # Milestone 6: Present a dashboard-like output of model efficiency metrics.

@@ -760,9 +760,157 @@ def milestone_4(
     }
 
 
+# -----------------------------------------------------------------------------
+# Milestone 5: Model Size and Simulated Inference Latency Benchmarking
+# -----------------------------------------------------------------------------
+import io
+
+
+def calculate_model_memory_footprint(model: nn.Module) -> Dict[str, Any]:
+    """Calculate the in-memory parameter footprint and serialized model size."""
+    param_bytes = 0
+    buffer_bytes = 0
+    for p in model.parameters():
+        param_bytes += p.nelement() * p.element_size()
+    for b in model.buffers():
+        buffer_bytes += b.nelement() * b.element_size()
+
+    # Also compute serialized state_dict size for real disk/serialization footprint
+    buf = io.BytesIO()
+    try:
+        torch.save(model.state_dict(), buf)
+        serialized_bytes = len(buf.getvalue())
+    except Exception:
+        serialized_bytes = param_bytes + buffer_bytes
+
+    size_bytes = max(serialized_bytes, param_bytes + buffer_bytes)
+    size_kb = round(size_bytes / 1024, 2)
+    size_mb = round(size_bytes / (1024 * 1024), 4)
+
+    return {
+        "size_bytes": size_bytes,
+        "size_kb": size_kb,
+        "size_mb": size_mb,
+        "param_count": sum(p.numel() for p in model.parameters()),
+    }
+
+
+def simulate_inference_speed(
+    model: nn.Module,
+    tokenizer: LegalClauseTokenizer,
+    clauses: List[str],
+    num_runs: int = 10,
+    warmup: int = 2,
+) -> Dict[str, float]:
+    """Simulate and measure inference latency over legal clauses."""
+    model.eval()
+    sample_clause = clauses[0] if clauses else "This Agreement shall be governed by Delaware law."
+
+    # Warmup runs
+    for _ in range(warmup):
+        _ = predict_clause_tag(model, tokenizer, sample_clause)
+
+    latencies_ms: List[float] = []
+    for _ in range(num_runs):
+        t0 = time.perf_counter()
+        for clause in clauses:
+            _ = predict_clause_tag(model, tokenizer, clause)
+        t1 = time.perf_counter()
+        elapsed_ms = (t1 - t0) * 1000.0
+        latencies_ms.append(elapsed_ms / max(1, len(clauses)))
+
+    latencies_ms.sort()
+    mean_lat = sum(latencies_ms) / len(latencies_ms)
+    median_lat = latencies_ms[len(latencies_ms) // 2]
+    p95_lat = latencies_ms[int(0.95 * len(latencies_ms))]
+    throughput = 1000.0 / mean_lat if mean_lat > 0 else 0.0
+
+    return {
+        "mean_latency_ms": round(mean_lat, 2),
+        "median_latency_ms": round(median_lat, 2),
+        "p95_latency_ms": round(p95_lat, 2),
+        "throughput_clauses_per_sec": round(throughput, 1),
+    }
+
+
+def compare_model_efficiency(
+    original_model: nn.Module,
+    dynamic_model: nn.Module,
+    static_model: nn.Module,
+    tokenizer: LegalClauseTokenizer,
+    test_clauses: List[str],
+) -> Dict[str, Any]:
+    """Compare size, latency, speedup, and compression ratio across model variants."""
+    models = {
+        "original": original_model,
+        "dynamic": dynamic_model,
+        "static": static_model,
+    }
+
+    metrics: Dict[str, Any] = {}
+    for name, m in models.items():
+        size_info = calculate_model_memory_footprint(m)
+        speed_info = simulate_inference_speed(m, tokenizer, test_clauses, num_runs=5)
+        metrics[name] = {**size_info, **speed_info}
+
+    orig_size = metrics["original"]["size_bytes"]
+    orig_lat = metrics["original"]["mean_latency_ms"]
+
+    for name in ["dynamic", "static"]:
+        cur_size = metrics[name]["size_bytes"]
+        cur_lat = metrics[name]["mean_latency_ms"]
+        
+        comp_ratio = orig_size / cur_size if cur_size > 0 else 1.0
+        size_reduction = ((orig_size - cur_size) / orig_size) * 100.0 if orig_size > 0 else 0.0
+        speedup = orig_lat / cur_lat if cur_lat > 0 else 1.0
+        
+        metrics[name]["compression_ratio"] = round(comp_ratio, 2)
+        metrics[name]["size_reduction_pct"] = round(size_reduction, 2)
+        metrics[name]["speedup"] = round(speedup, 2)
+
+    metrics["original"]["compression_ratio"] = 1.0
+    metrics["original"]["size_reduction_pct"] = 0.0
+    metrics["original"]["speedup"] = 1.0
+
+    return metrics
+
+
 # --- Milestone 5: Compare the original and quantized model sizes and measure simulated inference times.
-def milestone_5():  # TODO(milestone 5)
-    raise NotImplementedError("TODO(milestone 5)")
+def milestone_5(
+    models_dict: Optional[Dict[str, nn.Module]] = None,
+    tokenizer: Optional[LegalClauseTokenizer] = None,
+) -> Dict[str, Any]:
+    """Compare original and quantized model sizes and measure simulated inference speeds."""
+    if models_dict is None or tokenizer is None:
+        m4 = milestone_4()
+        original_model = m4["original_model"]
+        dynamic_model = m4["dynamic_model"]
+        static_model = m4["static_model"]
+        m2 = milestone_2()
+        tokenizer = m2["tokenizer"]
+    else:
+        original_model = models_dict["original"]
+        dynamic_model = models_dict["dynamic"]
+        static_model = models_dict["static"]
+
+    prep = prepare_ledgar_subset()
+    test_clauses = [item["text"] for item in prep["test_data"][:4]]
+
+    comparison = compare_model_efficiency(
+        original_model, dynamic_model, static_model, tokenizer, test_clauses
+    )
+
+    return {
+        "status": "completed",
+        "benchmarks": comparison,
+        "original_size_kb": comparison["original"]["size_kb"],
+        "dynamic_size_kb": comparison["dynamic"]["size_kb"],
+        "static_size_kb": comparison["static"]["size_kb"],
+        "dynamic_compression_ratio": comparison["dynamic"]["compression_ratio"],
+        "static_compression_ratio": comparison["static"]["compression_ratio"],
+        "dynamic_speedup": comparison["dynamic"]["speedup"],
+        "static_speedup": comparison["static"]["speedup"],
+    }
 
 
 # --- Milestone 6: Present a dashboard-like output of model efficiency metrics.

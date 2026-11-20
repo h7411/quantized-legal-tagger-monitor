@@ -22,7 +22,7 @@ Tick these off as you go, and commit after each one.
       Hint: Calculate standard classification metrics like accuracy, precision, recall, and F1-score for evaluation.
 - [x] **4. Apply dynamic and static post-training quantization to the trained model.**  
       Hint: Use the 'Shrink a Neural Network with Quantisation' drill's methods for applying dynamic and static quantization.
-- [ ] **5. Compare the original and quantized model sizes and measure simulated inference times.**  
+- [x] **5. Compare the original and quantized model sizes and measure simulated inference times.**  
       Hint: Implement functions to calculate model memory footprint and simulate inference speed for both original and quantized models.
 - [ ] **6. Present a dashboard-like output of model efficiency metrics.**  
       Hint: Organize and visualize the collected metrics (accuracy, size, speed) in a clear, comparative dashboard format.
