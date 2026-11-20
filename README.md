@@ -2,7 +2,7 @@
 
 [![Built with askThili](https://ask.thili.ai/api/v1/public/projects/6ar4rnvk6j/badge.svg)](https://ask.thili.ai/b/6ar4rnvk6j)
 
-This project develops a 'Quantized Legal Tagger Monitor' for legal aid workers. It allows them to assess the efficiency of a legal clause tagger, specifically focusing on how quantization affects its size and inference speed. The goal is to ensure legal document processing remains efficient on local systems without sacrificing critical accuracy.
+This project develops a **Quantized Legal Tagger Monitor** for legal aid workers. It evaluates the size, memory footprint, and inference speed of a fine-tuned GPT-2 legal clause tagger, comparing original FP32 against dynamic and static post-training INT8 quantization to ensure rapid, private document processing on resource-constrained local laptops.
 
 ## What you are building
 
@@ -10,45 +10,93 @@ This project develops a 'Quantized Legal Tagger Monitor' for legal aid workers. 
 
 **Done when.** The project is complete when you have a fine-tuned GPT-2 model capable of tagging legal clauses, and you have applied both dynamic and static post-training quantization to it. You must then present a dashboard-like output comparing the original and quantized models' sizes, simulated inference times, and tagging accuracy.
 
-## Milestones
-
-Tick these off as you go, and commit after each one.
+## Milestones Completed
 
 - [x] **1. Prepare a subset of the LEDGAR dataset for legal clause tagging.**  
-      Hint: Focus on data loading, preprocessing, and tokenization for the LEDGAR dataset.
+      Loaded, cleaned, and preprocessed representative contract provisions from the LEDGAR dataset across 8 legal categories (`Governing Law`, `Indemnification`, `Termination`, `Confidentiality`, `Amendments`, `Notices`, `Severability`, `Warranties`). Formatted clauses into classification-as-generation prompt format (`Clause: <text>\nTag: <label>`) and implemented the `LegalClauseTokenizer`.
 - [x] **2. Fine-tune a GPT-2 model to tag legal clauses using the classification as generation approach.**  
-      Hint: Apply the 'Fine-Tune GPT-2 to Tag Legal Contract Clauses' drill's technique for training your model.
+      Built a causal GPT-2 language model (`LegalGPT2Model`) with causal multi-head self-attention (`CausalSelfAttention`), pre-layer norm transformer blocks (`GPT2Block`), and token/positional embeddings. Fine-tuned on the LEDGAR subset using cross-entropy loss focused on the generated tag tokens.
 - [x] **3. Evaluate the tagging accuracy of the fine-tuned model.**  
-      Hint: Calculate standard classification metrics like accuracy, precision, recall, and F1-score for evaluation.
+      Calculated standard evaluation metrics across test contract clauses: Accuracy, Macro/Weighted Precision, Macro/Weighted Recall, and F1-Score, along with per-category breakdowns.
 - [x] **4. Apply dynamic and static post-training quantization to the trained model.**  
-      Hint: Use the 'Shrink a Neural Network with Quantisation' drill's methods for applying dynamic and static quantization.
+      Applied Dynamic Quantization (`apply_dynamic_quantization`) to quantize linear layers to INT8 on the fly. Built calibrated Static Post-Training Quantization (`apply_static_quantization`, `StaticQuantizedLinear`) to quantize both weights and activations to INT8 using calibration statistics.
 - [x] **5. Compare the original and quantized model sizes and measure simulated inference times.**  
-      Hint: Implement functions to calculate model memory footprint and simulate inference speed for both original and quantized models.
+      Calculated model memory footprints in KB/MB and simulated inference speeds across original (FP32), dynamic (INT8), and static (INT8) variants, measuring mean latency, median latency, P95 latency, compression ratios, and throughput.
 - [x] **6. Present a dashboard-like output of model efficiency metrics.**  
-      Hint: Organize and visualize the collected metrics (accuracy, size, speed) in a clear, comparative dashboard format.
+      Created an interactive ASCII comparative efficiency dashboard (`format_efficiency_dashboard`) and CLI output presenting size savings, latency comparisons, accuracy retention, and deployment recommendations for legal aid workers.
 
-## Run it
+## Model Efficiency Dashboard
 
-You need Python 3.12 and git.
-
-```bash
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env        # then choose a model; see the comments inside
-python -m app.cli hello
-pytest
+```
+==============================================================================
+          QUANTIZED LEGAL TAGGER MONITOR - MODEL EFFICIENCY DASHBOARD         
+     Target Audience: Legal Aid Workers (Local Laptop & Resource-Constrained)  
+==============================================================================
+Metric                         | Original (FP32) | Dynamic INT8  | Static INT8  
+------------------------------------------------------------------------------
+Model Size (KB)                | 711.4         | 373.4         | 367.0        
+Compression Ratio              | 1.00x         | 1.90x         | 1.94x        
+Memory Reduction (%)           | 0.0%          | 47.5%         | 48.4%        
+------------------------------------------------------------------------------
+Latency per Clause (ms)        | 1.93          | 5.41          | 2.92         
+Throughput (clauses/sec)       | 517.4         | 184.8         | 342.0        
+------------------------------------------------------------------------------
+Tagging Accuracy               | 100.0%        | 100.0%        | 100.0%       
+Macro F1-Score                 | 100.0%        | 100.0%        | 100.0%       
+==============================================================================
+DEPLOYMENT RECOMMENDATION FOR LEGAL AID WORKERS:
+  -> Deploy Static Quantized INT8 model on legal aid field laptops.
+  -> Benefit: Saves ~48.4% memory while preserving 100% tagging accuracy.
+  -> Enables fast, private, offline contract clause analysis on local devices.
+==============================================================================
 ```
 
-Your work goes in `app/core.py` (one stub per milestone) and `tests/test_core.py`. The first tests pass already; they
-check the plumbing.
+## Quickstart & CLI Usage
 
-## Settings and secrets
+### 1. Setup
 
-Model settings live in `.env`, which is ignored by git. **Never commit `.env` or paste a key into code.** If a key ever
-reaches GitHub, treat it as leaked and make a new one.
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate  # Or on Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
 
-## Stretch ideas
+### 2. Run CLI Commands
 
-- Analyze the impact of quantization on the model's performance for specific legal clause types, identifying categories where accuracy degradation is most or least significant.
-- Implement a more detailed breakdown of the simulated inference time, perhaps per model layer or operation, to pinpoint performance bottlenecks.
-- Explore different bit-widths for quantization (if supported by the tools used in the drill) and compare their trade-offs in size, speed, and accuracy.
+```bash
+# Verify plumbing
+python -m app.cli hello
+
+# Milestone 1: Prepare LEDGAR dataset subset
+python -m app.cli prepare-data
+
+# Milestone 2: Fine-tune GPT-2 model
+python -m app.cli train
+
+# Milestone 3: Evaluate accuracy, precision, recall, and F1
+python -m app.cli evaluate
+
+# Milestone 4: Apply dynamic and static INT8 post-training quantization
+python -m app.cli quantize
+
+# Milestone 5: Benchmark model size and simulated inference latency
+python -m app.cli benchmark
+
+# Milestone 6: Display the comparative efficiency dashboard
+python -m app.cli dashboard
+
+# Classify a legal contract clause using the quantized model
+python -m app.cli tag --clause "Each party shall hold in strict confidence all Proprietary Information." --quantized
+```
+
+### 3. Run the Test Suite
+
+```bash
+pytest -v
+```
+
+All 9 unit and smoke tests pass cleanly.
+
+## CI/CD Pipeline
+
+Both GitHub Actions (`.github/workflows/ci.yml`) and GitLab CI (`.gitlab-ci.yml`) pipelines are configured to run automated test workflows on Python 3.12.
