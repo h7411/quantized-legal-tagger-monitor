@@ -9,6 +9,7 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("prepare-data", help="Milestone 1: load and preprocess LEDGAR dataset")
     sub.add_parser("train", help="Milestone 2: fine-tune GPT-2 model on legal clauses")
     sub.add_parser("evaluate", help="Milestone 3: evaluate accuracy, precision, recall, and F1")
+    sub.add_parser("quantize", help="Milestone 4: apply dynamic and static quantization")
     args = parser.parse_args(argv)
     if args.command == "hello":
         print("Quantized Legal Tagger Monitor is ready. Open README.md for your milestones.")
@@ -24,6 +25,12 @@ def main(argv: list[str] | None = None) -> None:
         from app.core import milestone_3
         res = milestone_3()
         print(f"Evaluation: Accuracy={res['accuracy']:.2%}, Precision={res['precision']:.2%}, Recall={res['recall']:.2%}, F1={res['f1_score']:.2%}")
+    elif args.command == "quantize":
+        from app.core import milestone_4
+        res = milestone_4()
+        print("Quantization applied successfully:")
+        print(f"  - Dynamic Quantization: {res['dynamic_quantized']}")
+        print(f"  - Static Quantization:  {res['static_quantized']}")
 
 
 if __name__ == "__main__":

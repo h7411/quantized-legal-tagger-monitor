@@ -104,9 +104,32 @@ def test_milestone_3():
 
 
 # Milestone 4: Apply dynamic and static post-training quantization to the trained model.
-@pytest.mark.skip(reason="remove this line when you start milestone 4")
 def test_milestone_4():
-    raise NotImplementedError("write the test for milestone 4")
+    from app.core import (
+        milestone_4,
+        apply_dynamic_quantization,
+        apply_static_quantization,
+        StaticQuantizedLinear,
+    )
+    import torch
+    import torch.nn as nn
+
+    res = milestone_4()
+    assert res["status"] == "completed"
+    assert res["dynamic_quantized"] is True
+    assert res["static_quantized"] is True
+    assert res["dynamic_model"] is not None
+    assert res["static_model"] is not None
+    assert res["dynamic_pred"] == "Governing Law"
+    assert res["static_pred"] == "Governing Law"
+
+    # Test StaticQuantizedLinear module unit
+    lin = nn.Linear(16, 8)
+    sq = StaticQuantizedLinear(lin)
+    assert sq.weight_int8.dtype == torch.int8
+    x = torch.randn(2, 16)
+    out = sq(x)
+    assert out.shape == (2, 8)
 
 
 # Milestone 5: Compare the original and quantized model sizes and measure simulated inference times.

@@ -654,9 +654,110 @@ def milestone_3(
     }
 
 
+# -----------------------------------------------------------------------------
+# Milestone 4: Post-Training Quantization (Dynamic and Static PTQ)
+# -----------------------------------------------------------------------------
+class StaticQuantizedLinear(nn.Module):
+    """Calibrated static post-training INT8 quantized linear layer."""
+
+    def __init__(self, linear_layer: nn.Linear, act_scale: float = 0.05, act_zero_point: int = 0):
+        super().__init__()
+        self.in_features = linear_layer.in_features
+        self.out_features = linear_layer.out_features
+
+        # Quantize weights to signed int8
+        weight = linear_layer.weight.data
+        w_max = weight.abs().max().clamp(min=1e-8)
+        self.w_scale = float(w_max / 127.0)
+        q_weight = torch.clamp(torch.round(weight / self.w_scale), -128, 127).to(torch.int8)
+        self.register_buffer("weight_int8", q_weight)
+
+        if linear_layer.bias is not None:
+            self.register_buffer("bias", linear_layer.bias.data.clone())
+        else:
+            self.bias = None
+
+        self.act_scale = act_scale
+        self.act_zero_point = act_zero_point
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Quantize activations to int8 using calibrated scale
+        q_x = torch.clamp(torch.round(x / self.act_scale) + self.act_zero_point, -128, 127)
+        x_dequant = (q_x - self.act_zero_point) * self.act_scale
+        w_float = self.weight_int8.to(torch.float32) * self.w_scale
+        return F.linear(x_dequant, w_float, self.bias)
+
+
+def apply_dynamic_quantization(model: nn.Module) -> nn.Module:
+    """Apply dynamic post-training quantization to model Linear layers."""
+    model.eval()
+    return torch.quantization.quantize_dynamic(model, {nn.Linear}, dtype=torch.qint8)
+
+
+def apply_static_quantization(
+    model: nn.Module,
+    calibration_data: Optional[List[Dict[str, Any]]] = None,
+    tokenizer: Optional[LegalClauseTokenizer] = None,
+) -> nn.Module:
+    """Apply calibrated static post-training INT8 quantization to model."""
+    model.eval()
+    
+    # Calculate calibration statistics for activation scales
+    act_scale = 0.05
+    act_zero_point = 0
+    if calibration_data and tokenizer:
+        with torch.no_grad():
+            sample_ids = [item["input_ids"] for item in calibration_data[:4]]
+            x_tensor = torch.tensor(sample_ids, dtype=torch.long)
+            # Find embedding and hidden representation magnitude
+            emb = model.tok_emb(x_tensor)
+            act_max = emb.abs().max().clamp(min=1e-6).item()
+            act_scale = act_max / 127.0
+
+    def _replace_linear_with_static(mod: nn.Module) -> nn.Module:
+        for name, child in mod.named_children():
+            if isinstance(child, nn.Linear):
+                setattr(mod, name, StaticQuantizedLinear(child, act_scale=act_scale, act_zero_point=act_zero_point))
+            else:
+                _replace_linear_with_static(child)
+        return mod
+
+    cloned = copy.deepcopy(model)
+    return _replace_linear_with_static(cloned)
+
+
 # --- Milestone 4: Apply dynamic and static post-training quantization to the trained model.
-def milestone_4():  # TODO(milestone 4)
-    raise NotImplementedError("TODO(milestone 4)")
+def milestone_4(
+    model: Optional[nn.Module] = None,
+    tokenizer: Optional[LegalClauseTokenizer] = None,
+) -> Dict[str, Any]:
+    """Apply dynamic and static post-training quantization to the fine-tuned model."""
+    if model is None or tokenizer is None:
+        m2 = milestone_2()
+        model = m2["model"]
+        tokenizer = m2["tokenizer"]
+
+    prep = prepare_ledgar_subset()
+    calib_data = prep["train_data"]
+
+    dynamic_model = apply_dynamic_quantization(model)
+    static_model = apply_static_quantization(model, calib_data, tokenizer)
+
+    sample_clause = "This Agreement shall be governed by the laws of the State of Delaware."
+    dynamic_pred = predict_clause_tag(dynamic_model, tokenizer, sample_clause)
+    static_pred = predict_clause_tag(static_model, tokenizer, sample_clause)
+
+    return {
+        "status": "completed",
+        "original_model": model,
+        "dynamic_model": dynamic_model,
+        "static_model": static_model,
+        "dynamic_quantized": True,
+        "static_quantized": True,
+        "sample_clause": sample_clause,
+        "dynamic_pred": dynamic_pred,
+        "static_pred": static_pred,
+    }
 
 
 # --- Milestone 5: Compare the original and quantized model sizes and measure simulated inference times.
