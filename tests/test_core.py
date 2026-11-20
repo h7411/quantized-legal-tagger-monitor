@@ -5,9 +5,40 @@ They start skipped. Remove the `skip` line as you work on each milestone.
 import pytest
 
 # Milestone 1: Prepare a subset of the LEDGAR dataset for legal clause tagging.
-@pytest.mark.skip(reason="remove this line when you start milestone 1")
 def test_milestone_1():
-    raise NotImplementedError("write the test for milestone 1")
+    from app.core import (
+        milestone_1,
+        clean_clause,
+        format_classification_prompt,
+        LegalClauseTokenizer,
+        LEDGAR_CATEGORIES,
+    )
+    res = milestone_1()
+    assert res["status"] == "completed"
+    assert res["train_count"] >= 16
+    assert res["test_count"] >= 8
+    assert res["num_categories"] == len(LEDGAR_CATEGORIES)
+    assert res["vocab_size"] > 100
+    assert "Clause:" in res["sample_prompt"]
+    assert "Tag:" in res["sample_prompt"]
+
+    # Test clean_clause
+    dirty = "  This   Contract\r\nshall be  governed by   Delaware.  "
+    assert clean_clause(dirty) == "This Contract shall be governed by Delaware."
+
+    # Test format_classification_prompt
+    p_with_tag = format_classification_prompt("Sample clause", "Termination")
+    assert p_with_tag == "Clause: Sample clause\nTag: Termination"
+    p_without_tag = format_classification_prompt("Sample clause")
+    assert p_without_tag == "Clause: Sample clause\nTag:"
+
+    # Test Tokenizer
+    tok = res["tokenizer"]
+    enc = tok.encode("Clause: Test\nTag: Governing Law")
+    assert len(enc) > 0
+    dec = tok.decode(enc)
+    assert "Clause" in dec
+    assert "Governing Law" in dec
 
 
 # Milestone 2: Fine-tune a GPT-2 model to tag legal clauses using the classification as generation approach.

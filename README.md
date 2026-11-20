@@ -14,7 +14,7 @@ This project develops a 'Quantized Legal Tagger Monitor' for legal aid workers. 
 
 Tick these off as you go, and commit after each one.
 
-- [ ] **1. Prepare a subset of the LEDGAR dataset for legal clause tagging.**  
+- [x] **1. Prepare a subset of the LEDGAR dataset for legal clause tagging.**  
       Hint: Focus on data loading, preprocessing, and tokenization for the LEDGAR dataset.
 - [ ] **2. Fine-tune a GPT-2 model to tag legal clauses using the classification as generation approach.**  
       Hint: Apply the 'Fine-Tune GPT-2 to Tag Legal Contract Clauses' drill's technique for training your model.
