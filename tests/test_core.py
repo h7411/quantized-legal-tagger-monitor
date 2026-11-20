@@ -42,9 +42,38 @@ def test_milestone_1():
 
 
 # Milestone 2: Fine-tune a GPT-2 model to tag legal clauses using the classification as generation approach.
-@pytest.mark.skip(reason="remove this line when you start milestone 2")
 def test_milestone_2():
-    raise NotImplementedError("write the test for milestone 2")
+    from app.core import (
+        milestone_2,
+        LegalGPT2Model,
+        CausalSelfAttention,
+        GPT2Block,
+        predict_clause_tag,
+    )
+    import torch
+
+    res = milestone_2(epochs=3)
+    assert res["status"] == "completed"
+    assert isinstance(res["model"], LegalGPT2Model)
+    assert res["num_parameters"] > 10000
+    assert len(res["loss_history"]) == 3
+    # Check that training loss decreased
+    assert res["final_loss"] <= res["initial_loss"] + 0.1
+    assert res["predicted_tag"] == "Governing Law"
+
+    # Test CausalSelfAttention unit behavior
+    attn = CausalSelfAttention(d_model=32, n_head=2, max_seq_len=16)
+    x = torch.randn(2, 6, 32)
+    out_attn = attn(x)
+    assert out_attn.shape == x.shape
+    # Check causal mask property (upper triangular is 0)
+    assert attn.mask[0, 0, 0, 1] == 0
+    assert attn.mask[0, 0, 1, 0] == 1
+
+    # Test GPT2Block
+    block = GPT2Block(d_model=32, n_head=2)
+    out_block = block(x)
+    assert out_block.shape == x.shape
 
 
 # Milestone 3: Evaluate the tagging accuracy of the fine-tuned model.

@@ -16,7 +16,7 @@ Tick these off as you go, and commit after each one.
 
 - [x] **1. Prepare a subset of the LEDGAR dataset for legal clause tagging.**  
       Hint: Focus on data loading, preprocessing, and tokenization for the LEDGAR dataset.
-- [ ] **2. Fine-tune a GPT-2 model to tag legal clauses using the classification as generation approach.**  
+- [x] **2. Fine-tune a GPT-2 model to tag legal clauses using the classification as generation approach.**  
       Hint: Apply the 'Fine-Tune GPT-2 to Tag Legal Contract Clauses' drill's technique for training your model.
 - [ ] **3. Evaluate the tagging accuracy of the fine-tuned model.**  
       Hint: Calculate standard classification metrics like accuracy, precision, recall, and F1-score for evaluation.
